@@ -18,6 +18,10 @@ services:
         fromDatabase:
           name: codepilot-postgres
           property: connectionString
+      - key: BACKEND_URL
+        value: https://codepilot-backend.onrender.com
+      - key: FRONTEND_URL
+        value: https://codepilot-ai-sigma-woad.vercel.app
       - key: GEMINI_API_KEY
         sync: false # Must be set manually in Render dashboard
       - key: JWT_SECRET
@@ -26,10 +30,8 @@ services:
         sync: false # Set manually in Render dashboard for OAuth
       - key: GITHUB_CLIENT_SECRET
         sync: false # Set manually in Render dashboard for OAuth
-      - key: GITHUB_REDIRECT_URI
-        sync: false # Set manually in Render dashboard to match frontend callback (/login)
       - key: BACKEND_CORS_ORIGINS
-        sync: false # Set manually to allow vercel requests
+        value: http://localhost:3000,http://localhost,http://127.0.0.1:3000,http://127.0.0.1,https://codepilot-ai-sigma-woad.vercel.app
       - key: ENVIRONMENT
         value: production
       - key: PORT

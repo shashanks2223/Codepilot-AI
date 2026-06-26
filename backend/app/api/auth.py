@@ -1,5 +1,6 @@
 import datetime
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 import httpx
 
@@ -7,18 +8,32 @@ from app.core import security
 from app.core.config import settings
 from app.database.session import get_db
 from app.models.models import User, Session as UserSession
-from app.schemas.auth import Token, RefreshTokenRequest, UserResponse, GitHubAuthRequest
+from app.schemas.auth import Token, RefreshTokenRequest, UserResponse
 from app.api.deps import get_current_user
 
 router = APIRouter()
 
-@router.post("/callback", response_model=Token)
-async def github_callback(payload: GitHubAuthRequest, db: Session = Depends(get_db)):
-    code = payload.code
-    
+@router.get("/login")
+def github_login():
+    """Redirect user's browser to GitHub OAuth authorization URL."""
+    if not settings.GITHUB_CLIENT_ID:
+        # In mock bypass mode, redirect straight back with the mock code parameter
+        return RedirectResponse(f"{settings.FRONTEND_URL}/login?code=mock_development_code")
+        
+    github_url = (
+        "https://github.com/login/oauth/authorize"
+        f"?client_id={settings.GITHUB_CLIENT_ID}"
+        f"&redirect_uri={settings.BACKEND_URL}/api/auth/callback"
+        "&scope=repo,user"
+    )
+    return RedirectResponse(github_url)
+
+
+@router.get("/callback")
+async def github_callback(code: str, db: Session = Depends(get_db)):
+    """Exchange authorization code for tokens and redirect to the frontend with JWTs."""
     # 1. Developer / Mock Authentication Bypass
     if code == "mock_development_code" or not settings.GITHUB_CLIENT_ID:
-        # Create or fetch mock developer user
         user = db.query(User).filter(User.username == "mock_developer").first()
         if not user:
             user = User(
@@ -34,7 +49,6 @@ async def github_callback(payload: GitHubAuthRequest, db: Session = Depends(get_
     else:
         # 2. Real GitHub OAuth Exchange Flow
         async with httpx.AsyncClient() as client:
-            # Exchange code for token
             token_response = await client.post(
                 "https://github.com/login/oauth/access_token",
                 headers={"Accept": "application/json"},
@@ -42,24 +56,23 @@ async def github_callback(payload: GitHubAuthRequest, db: Session = Depends(get_
                     "client_id": settings.GITHUB_CLIENT_ID,
                     "client_secret": settings.GITHUB_CLIENT_SECRET,
                     "code": code,
-                    "redirect_uri": settings.GITHUB_REDIRECT_URI,
+                    "redirect_uri": f"{settings.BACKEND_URL}/api/auth/callback",
                 },
                 timeout=10.0
             )
             
             if token_response.status_code != 200:
-                raise HTTPException(status_code=400, detail="Failed to authenticate with GitHub")
+                return RedirectResponse(f"{settings.FRONTEND_URL}/login?error=token_exchange_failed")
             
             token_data = token_response.json()
             if "error" in token_data:
-                raise HTTPException(
-                    status_code=400,
-                    detail=f"GitHub OAuth error: {token_data.get('error_description', token_data['error'])}"
+                return RedirectResponse(
+                    f"{settings.FRONTEND_URL}/login?error={token_data.get('error')}"
                 )
                 
             access_token = token_data.get("access_token")
             if not access_token:
-                raise HTTPException(status_code=400, detail="GitHub did not return access token")
+                return RedirectResponse(f"{settings.FRONTEND_URL}/login?error=missing_access_token")
                 
             # Fetch User Profile from GitHub
             user_response = await client.get(
@@ -72,7 +85,7 @@ async def github_callback(payload: GitHubAuthRequest, db: Session = Depends(get_
             )
             
             if user_response.status_code != 200:
-                raise HTTPException(status_code=400, detail="Failed to fetch user profile from GitHub")
+                return RedirectResponse(f"{settings.FRONTEND_URL}/login?error=profile_fetch_failed")
                 
             user_info = user_response.json()
             github_id = user_info["id"]
@@ -101,20 +114,23 @@ async def github_callback(payload: GitHubAuthRequest, db: Session = Depends(get_
             db.refresh(user)
 
     # 3. Create Session Tokens
-    access_token = security.create_access_token(subject=user.id)
-    refresh_token = security.create_refresh_token(subject=user.id)
+    jwt_access_token = security.create_access_token(subject=user.id)
+    jwt_refresh_token = security.create_refresh_token(subject=user.id)
     
     # Save refresh token in database
     expires_at = datetime.datetime.utcnow() + datetime.timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
     session_record = UserSession(
         user_id=user.id,
-        refresh_token=refresh_token,
+        refresh_token=jwt_refresh_token,
         expires_at=expires_at
     )
     db.add(session_record)
     db.commit()
     
-    return Token(access_token=access_token, refresh_token=refresh_token)
+    # Redirect user back to the frontend with access and refresh tokens
+    return RedirectResponse(
+        f"{settings.FRONTEND_URL}/login?token={jwt_access_token}&refresh_token={jwt_refresh_token}"
+    )
 
 
 @router.post("/refresh", response_model=Token)

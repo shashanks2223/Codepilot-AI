@@ -78,23 +78,28 @@ codepilot-ai/
 
 ## ⚙️ Environment Variables
 
-Create a `.env` file in the project root:
+### Backend Configuration (`backend/.env`)
 
 ```env
 # GitHub OAuth Credentials
-# Leave empty to trigger local developer bypass mock mode
 GITHUB_CLIENT_ID=your_github_client_id
 GITHUB_CLIENT_SECRET=your_github_client_secret
 
-# AI Model Keys
-# Obtain from Google AI Studio
+# Deployment URL References
+BACKEND_URL=https://codepilot-backend.onrender.com
+FRONTEND_URL=https://codepilot-ai-sigma-woad.vercel.app
+
+# Google Gemini AI Key
 GEMINI_API_KEY=your_gemini_api_key
 
-# Database & Brokers
+# Database Connection (FastAPI auto-creates tables)
 DATABASE_URL=postgresql://codepilot_user:codepilot_password@db:5432/codepilot
-REDIS_URL=redis://redis:6379/0
-CELERY_BROKER_URL=redis://redis:6379/0
-CELERY_RESULT_BACKEND=redis://redis:6379/0
+```
+
+### Frontend Configuration (`frontend/.env`)
+
+```env
+VITE_API_URL=https://codepilot-backend.onrender.com
 ```
 
 ---

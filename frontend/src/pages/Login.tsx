@@ -16,38 +16,31 @@ export default function Login() {
     }
   }, [isAuthenticated, navigate]);
 
-  // Check URL params for GitHub callback code
+  // Check URL params for token redirect from backend
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
-    const code = urlParams.get("code");
+    const token = urlParams.get("token");
+    const refreshToken = urlParams.get("refresh_token");
+    const errorParam = urlParams.get("error");
     
-    if (code) {
-      exchangeOAuthCode(code);
+    if (errorParam) {
+      setError(`Authentication failed: ${errorParam}`);
+      return;
+    }
+
+    if (token && refreshToken) {
+      exchangeTokenForProfile(token, refreshToken);
     }
   }, []);
 
-  const exchangeOAuthCode = async (code: string) => {
+  const exchangeTokenForProfile = async (token: string, refreshToken: string) => {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch("/api/auth/callback", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ code }),
-      });
-      
-      if (!response.ok) {
-        throw new Error("Authentication handshake failed");
-      }
-      
-      const data = await response.json();
-      
       // Fetch user profile info
       const meResponse = await fetch("/api/auth/me", {
         headers: {
-          "Authorization": `Bearer ${data.access_token}`,
+          "Authorization": `Bearer ${token}`,
         }
       });
       
@@ -56,32 +49,23 @@ export default function Login() {
       }
       
       const meData = await meResponse.json();
-      login(data.access_token, data.refresh_token, meData);
+      login(token, refreshToken, meData);
       navigate("/");
     } catch (err: any) {
-      setError(err.message || "Failed to log in via GitHub OAuth");
+      setError(err.message || "Failed to log in with session tokens");
     } finally {
       setLoading(false);
     }
   };
 
   const handleGitHubLogin = () => {
-    // Generate GitHub redirect authorization URL dynamically
-    const clientId = import.meta.env.VITE_GITHUB_CLIENT_ID || "PLACEHOLDER_GITHUB_CLIENT_ID"; 
-    const redirectUri = encodeURIComponent(window.location.origin + "/login");
-    const githubUrl = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&scope=repo,user`;
-    window.location.href = githubUrl;
+    // Redirect browser to backend endpoint which builds authorization URL and redirects to GitHub
+    window.location.href = `${import.meta.env.VITE_API_URL}/api/auth/login`;
   };
 
-  const handleMockLogin = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      await exchangeOAuthCode("mock_development_code");
-    } catch (err: any) {
-      setError(err.message || "Mock login failed");
-      setLoading(false);
-    }
+  const handleMockLogin = () => {
+    // Redirect browser directly to backend callback with mock code to trigger session creation
+    window.location.href = `${import.meta.env.VITE_API_URL}/api/auth/callback?code=mock_development_code`;
   };
 
   return (

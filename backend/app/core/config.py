@@ -21,16 +21,19 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
     
+    # URLs
+    BACKEND_URL: str = "https://codepilot-backend.onrender.com"
+    FRONTEND_URL: str = "https://codepilot-ai-sigma-woad.vercel.app"
+    
     # GitHub OAuth
     GITHUB_CLIENT_ID: str = ""
     GITHUB_CLIENT_SECRET: str = ""
-    GITHUB_REDIRECT_URI: str = "http://localhost/api/auth/callback"
     
     # Gemini API Key
     GEMINI_API_KEY: str = ""
 
     # CORS Origins (Comma-separated string)
-    BACKEND_CORS_ORIGINS: str = "http://localhost:3000,http://localhost,http://127.0.0.1:3000,http://127.0.0.1"
+    BACKEND_CORS_ORIGINS: str = "http://localhost:3000,http://localhost,http://127.0.0.1:3000,http://127.0.0.1,https://codepilot-ai-sigma-woad.vercel.app"
 
     model_config = ConfigDict(
         case_sensitive=True,
