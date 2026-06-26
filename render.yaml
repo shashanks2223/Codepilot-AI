@@ -25,7 +25,8 @@ services:
           name: codepilot-postgres
           property: connectionString
       - key: REDIS_URL
-        fromRedis:
+        fromService:
+          type: redis
           name: codepilot-redis
           property: connectionString
       - key: GEMINI_API_KEY
@@ -57,7 +58,8 @@ services:
           name: codepilot-postgres
           property: connectionString
       - key: REDIS_URL
-        fromRedis:
+        fromService:
+          type: redis
           name: codepilot-redis
           property: connectionString
       - key: GEMINI_API_KEY
