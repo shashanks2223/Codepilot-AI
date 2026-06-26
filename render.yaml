@@ -26,6 +26,8 @@ services:
         sync: false # Set manually in Render dashboard for OAuth
       - key: GITHUB_CLIENT_SECRET
         sync: false # Set manually in Render dashboard for OAuth
+      - key: GITHUB_REDIRECT_URI
+        sync: false # Set manually in Render dashboard to match frontend callback (/login)
       - key: BACKEND_CORS_ORIGINS
         sync: false # Set manually to allow vercel requests
       - key: ENVIRONMENT

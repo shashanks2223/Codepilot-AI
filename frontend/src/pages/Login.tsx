@@ -66,10 +66,9 @@ export default function Login() {
   };
 
   const handleGitHubLogin = () => {
-    // Generate GitHub redirect authorization URL
-    // In production this would resolve dynamically
-    const clientId = "PLACEHOLDER_GITHUB_CLIENT_ID"; 
-    const redirectUri = encodeURIComponent("http://localhost/api/auth/callback");
+    // Generate GitHub redirect authorization URL dynamically
+    const clientId = import.meta.env.VITE_GITHUB_CLIENT_ID || "PLACEHOLDER_GITHUB_CLIENT_ID"; 
+    const redirectUri = encodeURIComponent(window.location.origin + "/login");
     const githubUrl = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&scope=repo,user`;
     window.location.href = githubUrl;
   };

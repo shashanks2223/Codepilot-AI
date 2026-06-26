@@ -30,7 +30,7 @@ To enable user authentication, you must register a GitHub OAuth application:
 2. Set the following details:
    - **Application Name**: `CodePilot AI`
    - **Homepage URL**: Your production frontend URL (e.g., `https://codepilot-ai.vercel.app` - *you can update this later once Vercel provides a domain*).
-   - **Authorization callback URL**: `https://<your-render-backend-url>.onrender.com/api/auth/callback`
+   - **Authorization callback URL**: `https://<your-vercel-domain>.vercel.app/login` (For local testing, use `http://localhost:3000/login`).
 3. Click **Register Application**.
 4. Copy the **Client ID** and generate a new **Client Secret**. Save these for the next step.
 
