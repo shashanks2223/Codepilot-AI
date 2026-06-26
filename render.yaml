@@ -6,13 +6,7 @@ databases:
     plan: free
 
 services:
-  # 2. Redis (Used as Celery Message Broker)
-  - type: redis
-    name: codepilot-redis
-    plan: free
-    ipAllowList: [] # Private/Internal only
-
-  # 3. FastAPI Web Service
+  # 2. FastAPI Web Service
   - type: web
     name: codepilot-backend
     runtime: docker
@@ -23,11 +17,6 @@ services:
       - key: DATABASE_URL
         fromDatabase:
           name: codepilot-postgres
-          property: connectionString
-      - key: REDIS_URL
-        fromService:
-          type: redis
-          name: codepilot-redis
           property: connectionString
       - key: GEMINI_API_KEY
         sync: false # Must be set manually in Render dashboard
@@ -43,5 +32,3 @@ services:
         value: production
       - key: PORT
         value: 8000
-
-

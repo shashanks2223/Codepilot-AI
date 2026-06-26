@@ -22,8 +22,7 @@ def run_async(coro):
     return loop.run_until_complete(coro)
 
 
-@celery_app.task(name="app.workers.tasks.analyze_pull_request", bind=True)
-def analyze_pull_request(self, pull_request_id: int, user_id: int):
+def analyze_pull_request(pull_request_id: int, user_id: int):
     """
     Celery background worker task to orchestrate code diff extraction,
     parsing, and Gemini AI analysis.
@@ -50,15 +49,21 @@ def analyze_pull_request(self, pull_request_id: int, user_id: int):
             logger.error(f"Repository not found for PR ID {pull_request_id}")
             return
 
-        # Create/Update Review record as pending
-        review = Review(
-            pull_request_id=pr.id,
-            commit_sha=pr.head_sha,
-            status="pending"
-        )
-        db.add(review)
-        db.commit()
-        db.refresh(review)
+        # Reuse existing pending Review record or create a new one
+        review = db.query(Review).filter(
+            Review.pull_request_id == pr.id,
+            Review.status == "pending"
+        ).first()
+        
+        if not review:
+            review = Review(
+                pull_request_id=pr.id,
+                commit_sha=pr.head_sha,
+                status="pending"
+            )
+            db.add(review)
+            db.commit()
+            db.refresh(review)
 
         # 2. Get GitHub Client and Fetch Raw PR Diff
         gh = GitHubService(user.github_access_token)

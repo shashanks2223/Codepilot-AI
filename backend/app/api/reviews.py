@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from typing import List
@@ -22,6 +22,7 @@ router = APIRouter()
 @router.post("/start", response_model=ReviewResponse)
 def start_review(
     payload: ReviewStartRequest,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
@@ -49,16 +50,8 @@ def start_review(
     db.commit()
     db.refresh(review)
 
-    # Trigger async analysis (Celery) with fallback to sync run for easy developer sandbox testing
-    try:
-        analyze_pull_request.delay(pr.id, current_user.id)
-    except Exception as e:
-        # Redis/Celery connection failed, run synchronously so developer dashboard still works
-        try:
-            analyze_pull_request(pr.id, current_user.id)
-            db.refresh(review)
-        except Exception as err:
-            raise HTTPException(status_code=500, detail=f"Pipeline initiation failed: {str(err)}")
+    # Trigger async analysis using FastAPI BackgroundTasks (runs in threadpool, saving memory)
+    background_tasks.add_task(analyze_pull_request, pr.id, current_user.id)
 
     return review
 
