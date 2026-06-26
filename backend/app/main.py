@@ -22,10 +22,9 @@ app = FastAPI(
 )
 
 # CORS configuration
-# Allows requests from Vite development server and standard hosts
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[str(origin).strip("/") for origin in settings.BACKEND_CORS_ORIGINS],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

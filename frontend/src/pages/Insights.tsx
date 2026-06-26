@@ -66,7 +66,7 @@ export default function InsightsPage() {
   }
 
   // Pre-compiled high fidelity insights to render dynamic metrics selector
-  const mockInsights: Record<number, any> = {
+  const mockInsights: Record<string | number, any> = {
     default: {
       securityScore: 88,
       maintainabilityIndex: 78,

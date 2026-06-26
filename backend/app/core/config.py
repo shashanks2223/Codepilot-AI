@@ -1,10 +1,18 @@
 import os
 from pydantic_settings import BaseSettings
-from pydantic import ConfigDict
+from pydantic import ConfigDict, field_validator
 
 class Settings(BaseSettings):
     PROJECT_NAME: str = "CodePilot AI"
     API_V1_STR: str = "/api"
+    
+    @field_validator("BACKEND_CORS_ORIGINS", mode="before")
+    @classmethod
+    def assemble_cors_origins(cls, v: str | list[str]) -> list[str] | str:
+        if isinstance(v, str) and not v.startswith("["):
+            return [i.strip() for i in v.split(",")]
+        return v
+
     
     # Database
     DATABASE_URL: str = "postgresql://codepilot_user:codepilot_password@db:5432/codepilot"
@@ -27,6 +35,14 @@ class Settings(BaseSettings):
     
     # Gemini API Key
     GEMINI_API_KEY: str = ""
+
+    # CORS Origins (Comma-separated string in env, parsed to list)
+    BACKEND_CORS_ORIGINS: list[str] = [
+        "http://localhost:3000",
+        "http://localhost",
+        "http://127.0.0.1:3000",
+        "http://127.0.0.1"
+    ]
 
     model_config = ConfigDict(
         case_sensitive=True,
