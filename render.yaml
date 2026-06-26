@@ -1,11 +1,11 @@
-services:
+databases:
   # 1. PostgreSQL Database
-  - type: db
-    name: codepilot-postgres
+  - name: codepilot-postgres
     databaseName: codepilot
     user: codepilot_user
     plan: free
 
+services:
   # 2. Redis (Used as Celery Message Broker)
   - type: redis
     name: codepilot-redis
@@ -36,6 +36,8 @@ services:
         sync: false # Set manually in Render dashboard for OAuth
       - key: GITHUB_CLIENT_SECRET
         sync: false # Set manually in Render dashboard for OAuth
+      - key: BACKEND_CORS_ORIGINS
+        sync: false # Set manually to allow vercel requests
       - key: ENVIRONMENT
         value: production
       - key: PORT
